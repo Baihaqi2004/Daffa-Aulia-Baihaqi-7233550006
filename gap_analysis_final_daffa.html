@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisis Gap & Hipotesis — Data Sah OJK/BPS/IdScore</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --gd: #1a3c2e; --gm: #2d6a4f; --ga: #52b788; --gl: #95d5b2;
+    --cream: #f5f2ed; --ww: #fefcf8; --td: #1c1c1c; --tm: #5a5a5a;
+    --gold: #c9a84c; --red: #c0392b; --org: #e07b39; --bl: #2471a3;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--td); }
+
+  /* HEADER */
+  .header { background:var(--gd); padding:44px 56px 36px; position:relative; overflow:hidden; }
+  .header::before { content:''; position:absolute; top:-80px; right:-80px; width:320px; height:320px; border-radius:50%; background:rgba(82,183,136,.10); }
+  .header-label { font-size:11px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--ga); margin-bottom:10px; }
+  .header h1 { font-family:'Playfair Display',serif; font-size:32px; color:#fefcf8; line-height:1.25; max-width:680px; }
+  .header h1 span { color:var(--gl); }
+  .header-meta { margin-top:16px; font-size:12px; color:rgba(255,255,255,.45); }
+  .data-badge { display:inline-block; margin-top:12px; padding:5px 14px; border:1px solid var(--ga); border-radius:20px; font-size:11px; color:var(--ga); letter-spacing:1px; font-weight:600; }
+
+  /* LAYOUT */
+  .container { max-width:1080px; margin:0 auto; padding:0 36px 64px; }
+  .section { padding-top:48px; }
+  .section-title { font-family:'Playfair Display',serif; font-size:21px; color:var(--gd); margin-bottom:4px; }
+  .section-sub { font-size:12.5px; color:var(--tm); margin-bottom:22px; }
+  .divider { width:44px; height:3px; background:var(--ga); margin-bottom:22px; }
+
+  /* GAP CARDS */
+  .gap-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .gap-card { background:var(--ww); border-radius:10px; padding:22px 18px; border-top:4px solid; box-shadow:0 2px 14px rgba(0,0,0,.05); }
+  .gap-card.x1 { border-color:var(--ga); }
+  .gap-card.x2 { border-color:var(--gold); }
+  .gap-card.x3 { border-color:var(--org); }
+  .var-tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:2px; padding:3px 9px; border-radius:20px; margin-bottom:11px; text-transform:uppercase; }
+  .x1 .var-tag { background:#e6f5ef; color:var(--gm); }
+  .x2 .var-tag { background:#fdf5e0; color:#8a5e00; }
+  .x3 .var-tag { background:#fef0e5; color:#9a4200; }
+  .gap-card h3 { font-size:13.5px; font-weight:600; margin-bottom:8px; }
+  .gap-card p { font-size:12px; line-height:1.7; color:var(--tm); }
+  .gap-stat { margin-top:10px; padding:9px 11px; border-radius:7px; font-size:11.5px; font-weight:500; line-height:1.6; }
+  .x1 .gap-stat { background:#e6f5ef; color:var(--gd); }
+  .x2 .gap-stat { background:#fdf5e0; color:#6b4700; }
+  .x3 .gap-stat { background:#fef0e5; color:#7a3000; }
+
+  /* CHARTS */
+  .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .chart-card { background:var(--ww); border-radius:10px; padding:22px 18px; box-shadow:0 2px 14px rgba(0,0,0,.05); }
+  .chart-card.full { grid-column:1/-1; }
+  .chart-title { font-size:13px; font-weight:600; color:var(--td); margin-bottom:3px; }
+  .chart-desc { font-size:11px; color:var(--tm); margin-bottom:16px; }
+  .chart-wrap { position:relative; height:230px; }
+  .chart-wrap.tall { height:280px; }
+
+  /* HYPOTHESIS */
+  .hyp-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .hyp-card { background:var(--ww); border-radius:10px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,.05); display:flex; gap:14px; }
+  .hyp-num { font-family:'Playfair Display',serif; font-size:28px; font-weight:900; color:var(--gl); line-height:1; min-width:30px; }
+  .hyp-content h4 { font-size:12.5px; font-weight:700; color:var(--gd); margin-bottom:5px; }
+  .hyp-content p { font-size:12px; line-height:1.65; color:var(--tm); }
+  .hyp-badge { display:inline-block; margin-top:7px; font-size:10px; font-weight:700; padding:2px 9px; border-radius:20px; background:var(--gd); color:var(--gl); letter-spacing:1px; }
+  .hyp-card.main { grid-column:1/-1; background:var(--gd); }
+  .hyp-card.main .hyp-num { color:var(--ga); }
+  .hyp-card.main .hyp-content h4 { color:#fefcf8; }
+  .hyp-card.main .hyp-content p { color:rgba(255,255,255,.6); }
+  .hyp-card.main .hyp-badge { background:var(--ga); color:var(--gd); }
+
+  /* GAP SUMMARY */
+  .gap-summary { background:var(--ww); border-radius:10px; padding:26px 26px; box-shadow:0 2px 14px rgba(0,0,0,.05); border-left:5px solid var(--ga); }
+  .gap-summary h3 { font-family:'Playfair Display',serif; font-size:17px; color:var(--gd); margin-bottom:12px; }
+  .gap-summary p { font-size:12.5px; line-height:1.8; color:var(--tm); margin-bottom:8px; }
+  .gap-summary p:last-child { margin-bottom:0; }
+  .gap-summary strong { color:var(--gd); }
+
+  /* ── SOURCE TABLE ── */
+  .source-section { padding-top:40px; }
+  .source-table { width:100%; border-collapse:collapse; background:var(--ww); border-radius:12px; overflow:hidden; box-shadow:0 2px 14px rgba(0,0,0,.05); }
+  .source-table thead tr { background:var(--gd); }
+  .source-table thead th { padding:13px 16px; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gl); text-align:left; }
+  .source-table tbody tr { border-bottom:1px solid #f0ece5; transition:background .15s; }
+  .source-table tbody tr:last-child { border-bottom:none; }
+  .source-table tbody tr:hover { background:#f5f8f6; }
+  .source-table td { padding:12px 16px; font-size:12px; color:var(--tm); vertical-align:middle; }
+  .source-table td:first-child { font-weight:600; color:var(--gd); white-space:nowrap; }
+  .src-link {
+    display:inline-flex; align-items:center; gap:5px;
+    color:var(--gm); font-weight:600; font-size:11.5px;
+    text-decoration:none; padding:4px 10px;
+    background:#e6f5ef; border-radius:20px;
+    border:1px solid rgba(45,106,79,.2);
+    transition:all .2s;
+  }
+  .src-link:hover { background:var(--gm); color:#fff; }
+  .src-link svg { flex-shrink:0; }
+  .data-used { font-size:11px; color:var(--tm); line-height:1.5; }
+  .badge-used { display:inline-block; background:#e6f5ef; color:var(--gm); font-size:10px; font-weight:600; padding:2px 7px; border-radius:12px; margin:2px 2px 0 0; }
+
+  /* FOOTER */
+  .footer { background:var(--gd); color:rgba(255,255,255,.4); text-align:center; padding:22px; font-size:11.5px; letter-spacing:.4px; margin-top:56px; }
+  .footer strong { color:var(--gl); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Analisis Gap Penelitian · Berbasis Data Sah · Sumber Dapat Diklik</div>
+  <h1>Gap Fenomena & Hipotesis:<br><span>Minat Belanja Gen Z</span> dengan SpayLater</h1>
+  <div class="header-meta">Daffa Aulia Baihaqi · NIM 7233550006 · Metopel</div>
+  <div class="data-badge">✓ Semua Sumber Terverifikasi & Dapat Diklik Langsung</div>
+</div>
+
+<div class="container">
+
+  <!-- GAP CARDS -->
+  <div class="section">
+    <div class="section-title">Analisis Research Gap</div>
+    <div class="section-sub">Ketidaksesuaian antara teori dan fenomena empiris yang menjadi dasar perumusan masalah</div>
+    <div class="divider"></div>
+    <div class="gap-grid">
+
+      <div class="gap-card x1">
+        <div class="var-tag">X1 → Y</div>
+        <h3>Kemudahan Berbelanja (SpayLater)</h3>
+        <p>Kemudahan SpayLater mendorong akses, namun Gen Z menggunakannya bukan semata karena efisiensi — melainkan karena FOMO/YOLO. SpayLater menjadi platform BNPL #1 di kalangan Gen Z Indonesia.</p>
+        <div class="gap-stat">📊 SpayLater = platform BNPL terpopuler Gen Z — 85 responden mahasiswa (JYE UPN VJ, 2024)</div>
+        <div class="gap-stat" style="margin-top:6px">📊 Usia 20–30 th dominasi 48,06% pengguna BNPL nasional (Pefindo IdScore, Juni 2024)</div>
+      </div>
+
+      <div class="gap-card x2">
+        <div class="var-tag">X2 → Y</div>
+        <h3>Suku Bunga / Perceived Usefulness</h3>
+        <p>Persepsi manfaat mendorong konsumsi, namun banyak pengguna tidak memahami bunga nyata. Piutang BNPL melonjak 89,2% yoy di tengah pelemahan daya beli — bukan karena kapasitas finansial meningkat.</p>
+        <div class="gap-stat">📊 Piutang BNPL Agustus 2024 = Rp7,99 T (+89,20% yoy), NPF = 2,52% (OJK via ANTARA, Okt 2024)</div>
+        <div class="gap-stat" style="margin-top:6px">📊 Total BNPL November 2024 = Rp30,36 T (+47,59% yoy) (OJK via Kompas.id, Jan 2025)</div>
+      </div>
+
+      <div class="gap-card x3">
+        <div class="var-tag">X3 → Y</div>
+        <h3>Literasi Keuangan Mahasiswa</h3>
+        <p>Literasi tinggi seharusnya menghambat penggunaan BNPL impulsif. Gap: mahasiswa memiliki literasi terendah kedua (56,42%) namun tetap mendominasi pengguna BNPL — literasi rendah gagal menjadi rem.</p>
+        <div class="gap-stat">📊 Indeks literasi pelajar/mahasiswa = 56,42% — terendah kedua (SNLIK 2024, OJK–BPS, Agt 2024)</div>
+        <div class="gap-stat" style="margin-top:6px">📊 Kredit macet BNPL usia 20–30 th = Rp450 M (31,7% total NPL) (IdScore via Espos.id, Agt 2024)</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GAP SUMMARY -->
+  <div class="section">
+    <div class="gap-summary">
+      <h3>Sintesis Gap: Paradoks Kemudahan, Manfaat, & Literasi</h3>
+      <p><strong>Gap utama</strong> terletak pada paradoks tiga variabel: kemudahan SpayLater (X1) memperluas akses, perceived usefulness (X2) mendorong konsumsi, tetapi literasi keuangan yang rendah (X3) tidak berhasil menjadi rem — kombinasi kemudahan + rendahnya literasi justru menghasilkan perilaku konsumtif yang meningkatkan minat belanja impulsif.</p>
+      <p>Data OJK 2024 memperlihatkan piutang BNPL naik 89,2% yoy di tengah daya beli yang melemah. Ini berarti bukan kapasitas finansial yang meningkat, melainkan kemudahan akses dan persepsi manfaat jangka pendek mengalahkan pertimbangan finansial rasional — sebuah gap yang belum terjawab tuntas dalam literatur Indriyani (2024), Trianita (2024), maupun Citra (2025).</p>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section">
+    <div class="section-title">Visualisasi Data Sekunder Terverifikasi</div>
+    <div class="section-sub">Seluruh angka bersumber dari lembaga resmi yang dapat dikutip secara akademis</div>
+    <div class="divider"></div>
+    <div class="charts-grid">
+
+      <div class="chart-card">
+        <div class="chart-title">Distribusi Usia Pengguna PayLater (Pefindo IdScore, Juni 2024)</div>
+        <div class="chart-desc">Usia 20–30 th mendominasi 48,06% — membuktikan Gen Z/Milenial muda sebagai pengguna utama</div>
+        <div class="chart-wrap"><canvas id="ageChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Kredit Macet BNPL per Kelompok Usia (IdScore, Juni 2024)</div>
+        <div class="chart-desc">Usia 20–30 th menyumbang 31,7% (Rp450 M) dari total NPL Rp1,42 T — sinyal risiko Gen Z</div>
+        <div class="chart-wrap"><canvas id="nplChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Indeks Literasi Keuangan per Kelompok Pekerjaan (SNLIK 2024, OJK–BPS)</div>
+        <div class="chart-desc">Pelajar/mahasiswa di posisi terendah kedua (56,42%) — memperkuat gap X3</div>
+        <div class="chart-wrap"><canvas id="literasiChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Indeks Literasi Keuangan per Kelompok Usia (SNLIK 2024, OJK–BPS)</div>
+        <div class="chart-desc">Usia 15–17 th paling rendah (50,70%); 18–25 th (mahasiswa) = 70,19% namun aktif pakai BNPL</div>
+        <div class="chart-wrap"><canvas id="usiaChart"></canvas></div>
+      </div>
+
+      <div class="chart-card full">
+        <div class="chart-title">Pertumbuhan Piutang BNPL — Data Resmi OJK (Rp Triliun, 2024)</div>
+        <div class="chart-desc">Lonjakan tajam piutang BNPL membuktikan tingginya minat belanja Gen Z terlepas dari kondisi ekonomi yang melemah (sumber: OJK via ANTARA, Kompas.com, Kompas.id, 2024)</div>
+        <div class="chart-wrap tall"><canvas id="growthChart"></canvas></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HYPOTHESIS -->
+  <div class="section">
+    <div class="section-title">Rumusan Hipotesis Penelitian</div>
+    <div class="section-sub">Berdasarkan gap antara teori TAM, data OJK/BPS/IdScore, dan literatur akademik</div>
+    <div class="divider"></div>
+    <div class="hyp-grid">
+      <div class="hyp-card">
+        <div class="hyp-num">H1</div>
+        <div class="hyp-content">
+          <h4>Kemudahan Berbelanja (X1) → Minat Belanja Gen Z (Y)</h4>
+          <p>Kemudahan SpayLater berpengaruh positif dan signifikan terhadap minat belanja mahasiswa Gen Z. Diperkuat dominasi usia 20–30 th sebagai 48,06% pengguna BNPL nasional (IdScore, Jun 2024).</p>
+          <span class="hyp-badge">H1: POSITIF SIGNIFIKAN</span>
+        </div>
+      </div>
+      <div class="hyp-card">
+        <div class="hyp-num">H2</div>
+        <div class="hyp-content">
+          <h4>Suku Bunga / Perceived Usefulness (X2) → Minat Belanja Gen Z (Y)</h4>
+          <p>Perceived usefulness berpengaruh positif namun bersifat paradoks: piutang BNPL naik 89,2% yoy (OJK, Agt 2024) justru saat daya beli melemah — persepsi manfaat jangka pendek mendominasi.</p>
+          <span class="hyp-badge">H2: POSITIF PARADOKS</span>
+        </div>
+      </div>
+      <div class="hyp-card">
+        <div class="hyp-num">H3</div>
+        <div class="hyp-content">
+          <h4>Literasi Keuangan (X3) → Minat Belanja Gen Z (Y)</h4>
+          <p>Literasi keuangan berpengaruh negatif terhadap minat belanja impulsif. Mahasiswa dengan literasi 56,42% (SNLIK 2024) tetap aktif menggunakan BNPL — literasi rendah gagal menjadi penghambat.</p>
+          <span class="hyp-badge">H3: NEGATIF SIGNIFIKAN</span>
+        </div>
+      </div>
+      <div class="hyp-card main">
+        <div class="hyp-num">H4</div>
+        <div class="hyp-content">
+          <h4>X1, X2, X3 Secara Simultan → Minat Belanja Gen Z (Y)</h4>
+          <p>Ketiga variabel secara simultan berpengaruh signifikan terhadap minat belanja mahasiswa Gen Z (Y). Total BNPL Rp30,36 T (Nov 2024) dan kredit macet usia 20–30 th sebesar Rp450 M (IdScore, Jun 2024) membuktikan interaksi kompleks tiga faktor ini perlu diteliti bersama-sama.</p>
+          <span class="hyp-badge">H4: SIMULTAN SIGNIFIKAN</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SUMBER DATA DAPAT DIKLIK ══════════════ -->
+  <div class="source-section">
+    <div class="section-title">Daftar Sumber Data — Klik untuk Akses Langsung</div>
+    <div class="section-sub">Semua sumber dapat dibuka langsung; angka dalam dokumen ini bersumber dari tautan di bawah ini</div>
+    <div class="divider"></div>
+
+    <table class="source-table">
+      <thead>
+        <tr>
+          <th style="width:130px">Lembaga / Penulis</th>
+          <th style="width:220px">Judul / Deskripsi</th>
+          <th>Data yang Digunakan</th>
+          <th style="width:140px">Akses Sumber</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr>
+          <td>OJK & BPS<br><small style="font-weight:400;color:#aaa">Siaran Pers, 2 Agt 2024</small></td>
+          <td>Siaran Pers Bersama SNLIK 2024 — Literasi & Inklusi Keuangan Indonesia</td>
+          <td class="data-used">
+            <span class="badge-used">Literasi pelajar/mhs: 56,42%</span>
+            <span class="badge-used">Literasi pegawai/prof: 83,22%</span>
+            <span class="badge-used">Literasi nasional: 65,43%</span>
+            <span class="badge-used">Usia 15–17 th: 50,70%</span>
+            <span class="badge-used">Usia 18–25 th: 70,19%</span>
+            <span class="badge-used">10.800 responden, 34 provinsi</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://ojk.go.id/id/berita-dan-kegiatan/siaran-pers/Pages/OJK-dan-BPS-Umumkan-Hasil-Survei-Nasional-Literasi-dan-Inklusi-Keuangan-Tahun-2024.aspx" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka OJK.go.id
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>OJK (PDF Resmi)<br><small style="font-weight:400;color:#aaa">Agt 2024</small></td>
+          <td>Dokumen Lengkap SNLIK 2024 (PDF resmi OJK)</td>
+          <td class="data-used">
+            <span class="badge-used">Laporan lengkap SNLIK 2024</span>
+            <span class="badge-used">Data per kelompok pekerjaan & usia</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://ojk.go.id/id/berita-dan-kegiatan/publikasi/Documents/Pages/Survei-Nasional-Literasi-dan-Inklusi-Keuangan-(SNLIK)-2024/Survei%20Nasional%20Literasi%20dan%20Inklusi%20Keuangan%20(SNLIK)%202024.pdf" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Unduh PDF
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>ANTARA News<br><small style="font-weight:400;color:#aaa">2 Okt 2024</small></td>
+          <td>OJK Catat Pembiayaan Paylater Capai Rp7,99 T per Agustus 2024</td>
+          <td class="data-used">
+            <span class="badge-used">Piutang BNPL Agt 2024: Rp7,99 T</span>
+            <span class="badge-used">+89,20% yoy</span>
+            <span class="badge-used">NPF gross: 2,52%</span>
+            <span class="badge-used">Narasumber: OJK Agusman</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://www.antaranews.com/berita/4372791/ojk-catat-pembiayaan-lewat-paylater-capai-rp799-t-per-agustus-2024" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka ANTARA
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Kompas.com<br><small style="font-weight:400;color:#aaa">5 Okt 2024</small></td>
+          <td>OJK Catat Penyaluran Pembiayaan Paylater Tembus Rp7,99 T per Agustus 2024</td>
+          <td class="data-used">
+            <span class="badge-used">Konfirmasi data OJK Agt 2024</span>
+            <span class="badge-used">Pertumbuhan Juli 2024: +73,55% yoy</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://money.kompas.com/read/2024/10/05/104818726/ojk-catat-penyaluran-pembiayaan-paylater-tembus-rp-799-triliun-per-agustus?page=all" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Kompas.com
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>ANTARA News<br><small style="font-weight:400;color:#aaa">16 Des 2024</small></td>
+          <td>OJK: Piutang Pembiayaan BNPL Capai Rp8,41 T per Oktober 2024</td>
+          <td class="data-used">
+            <span class="badge-used">BNPL PP Oktober 2024: Rp8,41 T</span>
+            <span class="badge-used">+63,89% yoy</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://www.antaranews.com/berita/4531458/ojk-piutang-pembiayaan-bnpl-capai-rp841-triliun-per-oktober-2024" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka ANTARA
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Kompas.id<br><small style="font-weight:400;color:#aaa">18 Jan 2025</small></td>
+          <td>Mulai 2027 Nasabah Paylater Wajib Minimal 18 Tahun dan Berpenghasilan Rp3 Juta</td>
+          <td class="data-used">
+            <span class="badge-used">Total BNPL Nov 2024: Rp30,36 T</span>
+            <span class="badge-used">+47,59% yoy</span>
+            <span class="badge-used">BNPL perbankan: Rp21,77 T</span>
+            <span class="badge-used">24,51 juta rekening</span>
+            <span class="badge-used">NPF Nov 2024: 2,92%</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://www.kompas.id/artikel/mulai-2027-nasabah-paylater-wajib-minimal-berusia-18-tahun-dan-berpenghasilan-rp-3-juta" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Kompas.id
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Pefindo IdScore<br><small style="font-weight:400;color:#aaa">via Infobanknews, Sep 2024</small></td>
+          <td>Milenial dan Gen Z Jadi Penyumbang Kredit Macet Pinjol dan Paylater</td>
+          <td class="data-used">
+            <span class="badge-used">Pengguna BNPL: 14,37 juta (Jun 2024)</span>
+            <span class="badge-used">Usia 20–30 th: 48,06%</span>
+            <span class="badge-used">Usia 30–40 th: 29,3%</span>
+            <span class="badge-used">Outstanding: Rp30,14 T</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://infobanknews.com/milenial-dan-genz-z-jadi-penyumbang-kredit-macet-pinjol-dan-paylater-ini-datanya/" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Infobanknews
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Pefindo IdScore<br><small style="font-weight:400;color:#aaa">via Bisnis/Espos, Agt 2024</small></td>
+          <td>Pengguna Paylater 14,37 Juta Orang, Kredit Macet Rp1,42 T (Juni 2024)</td>
+          <td class="data-used">
+            <span class="badge-used">Kredit macet total: Rp1,42 T</span>
+            <span class="badge-used">Usia 20–30 th: 31,7% = Rp450 M</span>
+            <span class="badge-used">Usia 30–40 th: 38,03% = Rp540 M</span>
+            <span class="badge-used">Narasumber: Dir. IdScore Yohanes Arts</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://bisnis.espos.id/pengguna-paylater-tembus-1437-juta-orang-kredit-macet-capai-rp142-triliun-1988794" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Espos/Bisnis
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Pefindo IdScore<br><small style="font-weight:400;color:#aaa">via Bisnis.com, Jan 2025</small></td>
+          <td>Kredit Macet PayLater Capai Rp723,1 Miliar per Oktober 2024</td>
+          <td class="data-used">
+            <span class="badge-used">NPL Oktober 2024: Rp723,1 M</span>
+            <span class="badge-used">Portofolio BNPL: Rp33,84 T</span>
+            <span class="badge-used">Debitur: 2,44 juta</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://finansial.bisnis.com/read/20250103/563/1828559/kredit-macet-paylater-capai-rp7231-miliar-per-oktober-2024" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Bisnis.com
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Kompas.com<br><small style="font-weight:400;color:#aaa">5 Okt 2024</small></td>
+          <td>OJK Sebut Paylater Bikin Anak Muda Kebanyakan Utang</td>
+          <td class="data-used">
+            <span class="badge-used">Pernyataan OJK Friderica (Kiki)</span>
+            <span class="badge-used">Konteks: paylater jadi perhatian regulator global</span>
+            <span class="badge-used">Imbauan: inklusi yang bertanggung jawab</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://money.kompas.com/read/2024/10/05/162755726/ojk-sebut-paylater-bikin-anak-muda-kebanyakan-utang?page=all" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Kompas.com
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>CNBC Indonesia<br><small style="font-weight:400;color:#aaa">2 Sep 2024</small></td>
+          <td>Gen Z dan Milenial Nunggak Kredit Macet Paylater Rp990 Miliar</td>
+          <td class="data-used">
+            <span class="badge-used">NPL usia 20–30 th: 31,7%</span>
+            <span class="badge-used">Konfirmasi dominasi Gen Z di BNPL</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://www.cnbcindonesia.com/market/20240902171422-17-568526/gen-z-dan-milenial-nunggak-kredit-macet-paylater-rp-990-miliar" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka CNBC Indonesia
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Tempo.co<br><small style="font-weight:400;color:#aaa">Jan 2025</small></td>
+          <td>Waspada Tren Penggunaan Paylater di Kalangan Generasi Muda</td>
+          <td class="data-used">
+            <span class="badge-used">Paylater = gaya hidup Gen Z (IdScore Tan Glant)</span>
+            <span class="badge-used">Termasuk untuk kopi & hobi</span>
+            <span class="badge-used">NPF 2024 di bawah 5%</span>
+          </td>
+          <td>
+            <a class="src-link" href="https://www.tempo.co/ekonomi/waspada-tren-penggunaan-paylater-di-kalangan-generasi-muda-bisa-sebabkan-kredit-macet-1198058" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Tempo.co
+            </a>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <strong>Daffa Aulia Baihaqi · NIM 7233550006</strong> · Analisis Gap & Hipotesis Penelitian Metopel<br>
+  Data terverifikasi: OJK–BPS SNLIK 2024 · Pefindo IdScore 2024 · ANTARA · Kompas.id · Bisnis.com · CNBC Indonesia · Tempo.co
+</div>
+
+<script>
+Chart.defaults.font.family = 'DM Sans, sans-serif';
+Chart.defaults.color = '#5a5a5a';
+const G='#52b788',G2='#2d6a4f',GOLD='#c9a84c',RED='#c0392b',ORG='#e07b39',BL='#2471a3',GRAY='#bdc3c7';
+
+// 1. Distribusi usia pengguna BNPL — IdScore Jun 2024
+new Chart(document.getElementById('ageChart'),{
+  type:'doughnut',
+  data:{
+    labels:['≤20–30 th (Gen Z Muda)','30–40 th (Gen Z–Milenial)','40–50 th','50–55 th','> 55 th'],
+    datasets:[{data:[48.06,29.3,12.87,3.54,1.82],backgroundColor:[G,G2,GOLD,ORG,GRAY],borderWidth:2,borderColor:'#fefcf8'}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10},padding:7}},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw}%`}}}}
+});
+
+// 2. Kredit macet per usia — IdScore Jun 2024
+new Chart(document.getElementById('nplChart'),{
+  type:'bar',
+  data:{
+    labels:['30–40 th','20–30 th','40–50 th','≤20 th','51–55 th','>55 th'],
+    datasets:[{label:'Kontribusi NPL (%)',data:[38.03,31.7,21.15,2.82,3.52,2.78],backgroundColor:[RED,ORG,GOLD,G,G2,GRAY],borderRadius:5}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{min:0,max:45,ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:10}}}},plugins:{legend:{display:false}}}
+});
+
+// 3. Literasi per pekerjaan — SNLIK 2024 OJK-BPS
+new Chart(document.getElementById('literasiChart'),{
+  type:'bar',
+  data:{
+    labels:['Pegawai/Profesional','Pengusaha/Wiraswasta','Ibu Rumah Tangga','Pensiunan','Pelajar/Mahasiswa','Tdk/Belum Bekerja'],
+    datasets:[{label:'Indeks Literasi (%)',data:[83.22,78.32,64.44,57.55,56.42,42.18],backgroundColor:[G,G,GOLD,ORG,RED,RED],borderRadius:5}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{font:{size:10}}},y:{min:0,max:95,ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}},plugins:{legend:{display:false}}}
+});
+
+// 4. Literasi per usia — SNLIK 2024
+new Chart(document.getElementById('usiaChart'),{
+  type:'bar',
+  data:{
+    labels:['15–17 th','18–25 th\n(Mhs)','26–35 th','36–50 th','51–79 th'],
+    datasets:[{label:'Indeks Literasi (%)',data:[50.70,70.19,74.82,71.72,52.51],backgroundColor:[RED,GOLD,G,G,GRAY],borderRadius:5}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{font:{size:10}}},y:{min:40,max:82,ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}},plugins:{legend:{display:false}}}
+});
+
+// 5. Pertumbuhan BNPL — data titik nyata OJK 2024
+new Chart(document.getElementById('growthChart'),{
+  type:'line',
+  data:{
+    labels:['Mar 2024','Jun 2024','Jul 2024','Agt 2024','Okt 2024','Nov 2024'],
+    datasets:[
+      {label:'BNPL Perusahaan Pembiayaan (Rp T)',data:[6.13,null,null,7.99,8.41,8.59],borderColor:G,backgroundColor:'rgba(82,183,136,0.12)',fill:true,tension:0.4,pointBackgroundColor:G,pointRadius:6,borderWidth:2.5,spanGaps:true},
+      {label:'Total BNPL (PP + Perbankan) (Rp T)',data:[null,30.14,null,26.37,null,30.36],borderColor:GOLD,backgroundColor:'rgba(201,168,76,0.10)',fill:true,tension:0.4,pointBackgroundColor:GOLD,pointRadius:6,borderWidth:2.5,borderDash:[6,3],spanGaps:true},
+      {label:'NPL/Kredit Macet BNPL (Rp T)',data:[null,1.42,null,null,0.72,null],borderColor:RED,pointBackgroundColor:RED,pointRadius:7,borderWidth:2,spanGaps:true,borderDash:[4,4]}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>'Rp '+v+' T'},grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{color:'rgba(0,0,0,0.05)'}}},plugins:{legend:{position:'bottom',labels:{boxWidth:14,font:{size:11}}}}}
+});
+</script>
+</body>
+</html>
